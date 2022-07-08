@@ -91,16 +91,16 @@ fn version_bump(version: &Version, bump: CommitType) -> Option<Version> {
     if version.major == 0 {
         match bump {
             CommitType::Unknown => return None,
-            CommitType::Patch => version.increment_patch(),
-            CommitType::Minor => version.increment_patch(),
-            CommitType::Major => version.increment_minor(),
+            CommitType::Patch => version.patch += 1,
+            CommitType::Minor => version.patch += 1,
+            CommitType::Major => version.minor += 1,
         }
     } else {
         match bump {
             CommitType::Unknown => return None,
-            CommitType::Patch => version.increment_patch(),
-            CommitType::Minor => version.increment_minor(),
-            CommitType::Major => version.increment_major(),
+            CommitType::Patch => version.patch += 1,
+            CommitType::Minor => version.minor += 1,
+            CommitType::Major => version.major += 1,
         }
     }
 
