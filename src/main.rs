@@ -88,20 +88,17 @@ fn version_bump(version: &Version, bump: CommitType) -> Option<Version> {
     // the initial development phase is treated slightly differently.
     // The minor version is incremented for breaking changes
     // and major is kept at zero until the public API has become more stable.
-    if version.major == 0 {
-        match bump {
-            CommitType::Unknown => return None,
-            CommitType::Patch => version.patch += 1,
-            CommitType::Minor => version.patch += 1,
-            CommitType::Major => version.minor += 1,
-        }
-    } else {
-        match bump {
-            CommitType::Unknown => return None,
-            CommitType::Patch => version.patch += 1,
-            CommitType::Minor => version.minor += 1,
-            CommitType::Major => version.major += 1,
-        }
+    let major_zero = version.major == 0;
+
+    match bump {
+        CommitType::Major if major_zero => version.minor += 1,
+        CommitType::Minor if major_zero => version.patch += 1,
+
+        CommitType::Major => version.major += 1,
+        CommitType::Minor => version.minor += 1,
+        CommitType::Patch => version.patch += 1,
+
+        CommitType::Unknown => return None,
     }
 
     Some(version)
