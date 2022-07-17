@@ -33,7 +33,7 @@ pub fn generate(
     {
         let mut writer = MarkdownWriter::new(&mut out_buf);
         clog.write_changelog_with(&mut writer)
-            .map_err(|_| "Genearting changelog failed")?
+            .map_err(|_| "Generating changelog failed")?
     }
 
     let out_buf = out_buf.into_inner().unwrap();
