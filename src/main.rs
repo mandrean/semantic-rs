@@ -91,11 +91,21 @@ fn version_bump(version: &Version, bump: CommitType) -> Option<Version> {
     let major_zero = version.major == 0;
 
     match bump {
-        CommitType::Major if major_zero => version.minor += 1,
+        CommitType::Major if major_zero => {
+            version.minor += 1;
+            version.patch = 0;
+        },
         CommitType::Minor if major_zero => version.patch += 1,
 
-        CommitType::Major => version.major += 1,
-        CommitType::Minor => version.minor += 1,
+        CommitType::Major => {
+            version.major += 1;
+            version.minor = 0;
+            version.patch = 0;
+        },
+        CommitType::Minor => {
+            version.minor += 1;
+            version.patch = 0;
+        },
         CommitType::Patch => version.patch += 1,
 
         CommitType::Unknown => return None,
