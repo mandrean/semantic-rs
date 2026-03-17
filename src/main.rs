@@ -198,9 +198,11 @@ fn package_crate(config: &config::Config, repository_path: &str, new_version: &s
     git::commit_files(config, new_version)
         .unwrap_or_else(|err| error!("Committing files failed: {:?}", err));
 
-    info!("Package crate");
-    if !cargo::package(repository_path) {
-        error!("`cargo package` failed. See above for the cargo error message.");
+    if config.can_release_to_cratesio() {
+        info!("Package crate");
+        if !cargo::package(repository_path) {
+            error!("`cargo package` failed. See above for the cargo error message.");
+        }
     }
 }
 
