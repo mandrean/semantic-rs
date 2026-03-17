@@ -1,11 +1,19 @@
-use hubcaps::releases::ReleaseOptions;
-use hubcaps::{Credentials, Github};
+use serde::Serialize;
 
 use crate::config::Config;
 use crate::error::Error;
 
 use super::USERAGENT;
-use tokio_compat::runtime::Runtime;
+
+#[derive(Serialize)]
+struct CreateRelease<'a> {
+    tag_name: &'a str,
+    name: &'a str,
+    body: &'a str,
+    target_commitish: &'a str,
+    draft: bool,
+    prerelease: bool,
+}
 
 pub fn can_release(config: &Config) -> bool {
     let repo = &config.repository;
@@ -26,28 +34,38 @@ pub fn is_github_url(url: &str) -> bool {
 }
 
 pub fn release(config: &Config, tag_name: &str, tag_message: &str) -> Result<(), Error> {
-    let user = &config.user.as_ref().unwrap()[..];
-    let repo_name = &config.repository_name.as_ref().unwrap()[..];
-    let branch = &config.branch[..];
+    let user = config.user.as_ref().unwrap();
+    let repo_name = config.repository_name.as_ref().unwrap();
     let token = config.gh_token.as_ref().unwrap();
 
-    let credentials = Credentials::Token(token.to_owned());
-    let github = Github::new(USERAGENT, credentials)?;
+    let url = format!(
+        "https://api.github.com/repos/{}/{}/releases",
+        user, repo_name
+    );
 
-    let opts = ReleaseOptions::builder(tag_name)
-        .name(tag_name)
-        .body(tag_message)
-        .commitish(branch)
-        .draft(false)
-        .prerelease(false)
-        .build();
+    let body = CreateRelease {
+        tag_name,
+        name: tag_name,
+        body: tag_message,
+        target_commitish: &config.branch,
+        draft: false,
+        prerelease: false,
+    };
 
-    let repo = github.repo(user, repo_name);
-    let release = repo.releases();
-
-    Runtime::new()
+    tokio::runtime::Runtime::new()
         .expect("Failed to create Tokio runtime")
-        .block_on_std(release.create(&opts))
-        .map(|_| ())
+        .block_on(async {
+            reqwest::Client::builder()
+                .user_agent(USERAGENT)
+                .build()?
+                .post(&url)
+                .header("Authorization", format!("token {}", token))
+                .header("Accept", "application/vnd.github.v3+json")
+                .json(&body)
+                .send()
+                .await?
+                .error_for_status()?;
+            Ok::<(), reqwest::Error>(())
+        })
         .map_err(Error::from)
 }

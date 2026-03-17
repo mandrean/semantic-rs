@@ -8,7 +8,7 @@ use crate::commit_analyzer::{self, CommitType};
 use crate::config::Config;
 use crate::error::Error;
 
-pub fn get_signature(repo: &Repository) -> Result<Signature, Error> {
+pub fn get_signature(repo: &Repository) -> Result<Signature<'_>, Error> {
     let author = {
         let mut author = env::var("GIT_COMMITTER_NAME").map_err(Error::from);
 
@@ -106,7 +106,7 @@ pub fn latest_tag(repo: &Repository) -> Option<Version> {
 pub fn version_bump_since_latest(repo: &Repository) -> CommitType {
     match latest_tag(repo) {
         Some(t) => {
-            let tag = format!("v{}", t.to_string());
+            let tag = format!("v{}", t);
             version_bump_since_tag(repo, &tag)
         }
         None => CommitType::Major,
@@ -153,7 +153,7 @@ pub fn commit_files(config: &Config, new_version: &str) -> Result<(), Error> {
 }
 
 pub fn tag(config: &Config, tag_name: &str, tag_message: &str) -> Result<(), Error> {
-    create_tag(config, &tag_name, &tag_message).map_err(Error::from)
+    create_tag(config, tag_name, tag_message).map_err(Error::from)
 }
 
 pub fn push(config: &Config, tag_name: &str) -> Result<(), Error> {
@@ -174,11 +174,11 @@ pub fn push(config: &Config, tag_name: &str) -> Result<(), Error> {
 
     if is_https_remote(remote.url()) {
         cbs.credentials(|_url, _username, _allowed| {
-            Cred::userpass_plaintext(&gh_username.unwrap(), &gh_token.unwrap())
+            Cred::userpass_plaintext(gh_username.unwrap(), gh_token.unwrap())
         });
         opts.remote_callbacks(cbs);
     } else {
-        cbs.credentials(|_url, username, _allowed| Cred::ssh_key_from_agent(&username.unwrap()));
+        cbs.credentials(|_url, username, _allowed| Cred::ssh_key_from_agent(username.unwrap()));
         opts.remote_callbacks(cbs);
     }
 

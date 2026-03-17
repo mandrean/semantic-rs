@@ -1,29 +1,22 @@
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::prelude::*;
 use std::io::Error;
+use std::io::prelude::*;
 use std::path::Path;
 
-use cargo_toml::Manifest;
 use regex::Regex;
+use toml::Value;
 
 #[derive(Debug)]
 pub enum TomlError {
-    Parse(&'static str),
-    Io(Error),
+    Parse(#[allow(dead_code)] &'static str),
+    Io(#[allow(dead_code)] Error),
 }
 
 pub fn read_version(file: String) -> Option<String> {
-    let manifest: Manifest = match toml::from_str(&file) {
-        Ok(manifest) => manifest,
-        Err(_) => return None,
-    };
-    let package = match manifest.package {
-        Some(package) => package,
-        None => return None,
-    };
-
-    Some(package.version).filter(|v| !v.is_empty())
+    let value: Value = toml::from_str(&file).ok()?;
+    let version = value.get("package")?.get("version")?.as_str()?.to_string();
+    Some(version).filter(|v| !v.is_empty())
 }
 
 pub fn file_with_new_version(file: String, new_version: &str) -> String {
@@ -54,10 +47,7 @@ pub fn write_new_version(repository_path: &str, new_version: &str) -> Result<(),
 }
 
 fn read_cargo_toml(file_path: &Path) -> Result<String, Error> {
-    let mut handle = match File::open(file_path) {
-        Ok(handle) => handle,
-        Err(err) => return Err(err),
-    };
+    let mut handle = File::open(file_path)?;
 
     let mut buffer = String::new();
     match handle.read_to_string(&mut buffer) {
@@ -68,9 +58,6 @@ fn read_cargo_toml(file_path: &Path) -> Result<String, Error> {
 
 #[cfg(test)]
 mod tests {
-    extern crate regex;
-    extern crate toml;
-
     use super::*;
 
     fn example_file() -> String {

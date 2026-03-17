@@ -2,28 +2,29 @@
 name = "semantic-rs"
 version = "1.0.0"
 authors = ["Jan Schulte <hello@unexpected-co.de>", "Jan-Erik Rediger <janerik@fnordig.de>", "Sebastian Mandrean <sebastian.mandrean@gmail.com>"]
-edition = "2018"
+edition = "2024"
 description = "Automatic crate publishing"
 license = "MIT"
 repository = "https://github.com/mandrean/semantic-rs"
 readme = "README.md"
 
 [dependencies]
-cargo_toml = "0.11"
-clap = "2.34"
-clog = "0.9"
-env_logger = { git = "https://github.com/env-logger-rs/env_logger", rev = "b8c3754" }
-git2 = "0.14"
+clap = { version = "4", features = ["derive"] }
+clog = { git = "https://github.com/clog-tool/clog-lib", rev = "0289b1b" }
+env_logger = "0.11"
+git2 = { version = "0.19", features = ["vendored-libgit2", "vendored-openssl"] }
 log = "0.4"
-regex = "1.6"
-semver = "1.0"
-term = "0.7"
+regex = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+semver = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tokio = { version = "1", features = ["full"] }
-tokio-compat = "0.1"
-toml = "0.5"
+toml = "0.8"
 url = "2"
 
-[dependencies.hubcaps]
-version = "0.6"
-default-features = false
-features = ["rustls-tls"]
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
