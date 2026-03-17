@@ -107,6 +107,7 @@ jobs:
           gh release upload "${{ github.ref_name }}" \
             artifacts/semantic-rs-linux-amd64/semantic-rs-linux-amd64 \
             artifacts/semantic-rs-linux-arm64/semantic-rs-linux-arm64 \
+            --repo "${{ github.repository }}" \
             --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
