@@ -1,16 +1,17 @@
-use clog::fmt::MarkdownWriter;
-use clog::Clog;
 use std::io::BufWriter;
 use std::path::PathBuf;
 
-pub fn write(repository_path: &str, old_version: &str, new_version: &str) -> Result<(), String> {
-    let mut clog = Clog::with_dir(repository_path).map_err(|_| "Clog failed".to_owned())?;
+use clog::Clog;
+use clog::fmt::MarkdownWriter;
 
+pub fn write(repository_path: &str, old_version: &str, new_version: &str) -> Result<(), String> {
     let mut clog_file = PathBuf::from(repository_path);
     clog_file.push("Changelog.md");
 
     // TODO: Make this configurable? Rely on clog's own configuration?
-    clog.changelog(clog_file.to_str().unwrap())
+    let clog = Clog::with_git_work_tree(repository_path)
+        .map_err(|_| "Clog failed".to_owned())?
+        .changelog(clog_file.to_str().unwrap())
         .from(format!("v{}", old_version))
         .version(format!("v{}", new_version));
 
@@ -23,9 +24,9 @@ pub fn generate(
     old_version: &str,
     new_version: &str,
 ) -> Result<String, String> {
-    let mut clog = Clog::with_dir(repository_path).map_err(|_| "Clog failed".to_owned())?;
-
-    clog.from(format!("v{}", old_version))
+    let clog = Clog::with_git_work_tree(repository_path)
+        .map_err(|_| "Clog failed".to_owned())?
+        .from(format!("v{}", old_version))
         .version(format!("v{}", new_version));
 
     let mut out_buf = BufWriter::new(Vec::new());

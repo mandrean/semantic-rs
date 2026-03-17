@@ -10,75 +10,58 @@ jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Setup toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
           components: rustfmt, clippy
-          override: true
-      - name: Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-      - name: Rustfmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo clippy -- -D warnings
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
 
   release:
     name: Release
     needs: check
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v4
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Setup toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: rustfmt, clippy
-          override: true
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+      - name: Skip if last commit was a release
+        id: guard
+        run: |
+          msg=$(git log -1 --format='%s')
+          if [[ "$msg" == "chore: Bump version"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.guard.outputs.skip == 'false'
+      - uses: Swatinem/rust-cache@v2
+        if: steps.guard.outputs.skip == 'false'
+      - name: Configure git
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          git config user.name "semantic-rs"
+          git config user.email "semantic-rs@users.noreply.github.com"
       - name: Semantic Release
+        if: steps.guard.outputs.skip == 'false'
         run: cargo run -- -r yes -w yes
         env:
           CI: true
           RUST_LOG: debug
           RUST_BACKTRACE: 1
           GH_USERNAME: ${{ github.actor }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CARGO_TOKEN: ${{ secrets.CARGO_TOKEN }}
           GIT_COMMITTER_NAME: semantic-rs
-          GIT_COMMITTER_EMAIL: semantic@rs
+          GIT_COMMITTER_EMAIL: semantic-rs@users.noreply.github.com

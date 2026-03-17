@@ -1,19 +1,16 @@
-use std::convert::From;
 use std::env::VarError;
 use std::fmt;
 use std::io::Error as IoError;
 
 use git2::Error as GitError;
-use hubcaps::Error as HubcapsError;
-
-use self::Error::*;
+use reqwest::Error as ReqwestError;
 
 #[derive(Debug)]
 pub enum Error {
     Git(GitError),
     Var(VarError),
     Io(IoError),
-    GitHub(HubcapsError),
+    GitHub(ReqwestError),
 }
 
 impl From<GitError> for Error {
@@ -34,19 +31,19 @@ impl From<IoError> for Error {
     }
 }
 
-impl From<HubcapsError> for Error {
-    fn from(err: HubcapsError) -> Error {
+impl From<ReqwestError> for Error {
+    fn from(err: ReqwestError) -> Error {
         Error::GitHub(err)
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Git(ref e) => e.fmt(f),
-            Var(ref e) => e.fmt(f),
-            Io(ref e) => e.fmt(f),
-            GitHub(ref e) => e.fmt(f),
+        match self {
+            Error::Git(e) => e.fmt(f),
+            Error::Var(e) => e.fmt(f),
+            Error::Io(e) => e.fmt(f),
+            Error::GitHub(e) => e.fmt(f),
         }
     }
 }

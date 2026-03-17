@@ -41,6 +41,8 @@ pub fn user_repo_from_url(url: &str) -> Result<(String, String), String> {
 
 #[cfg(test)]
 mod test {
+    use log::info;
+
     use super::*;
 
     #[test]
