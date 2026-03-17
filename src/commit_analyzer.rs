@@ -1,4 +1,3 @@
-use clog::error::Error;
 use clog::Clog;
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord)]
@@ -11,9 +10,15 @@ pub enum CommitType {
 
 use self::CommitType::*;
 
-pub fn analyze_single(commit: &str) -> Result<CommitType, Error> {
-    let clog = Clog::new().expect("Clog initialization failed");
-    let commit = clog.parse_raw_commit(commit);
+pub fn analyze_single(commit: &str) -> Result<CommitType, clog::error::Error> {
+    let clog = Clog::with_git_work_tree(".").expect("Clog initialization failed");
+
+    // parse_raw_commit returns Err(UnknownComponent) for commits that don't match
+    // any configured section — treat those as Unknown rather than propagating the error.
+    let commit = match clog.parse_raw_commit(commit) {
+        Ok(c) => c,
+        Err(_) => return Ok(Unknown),
+    };
 
     if !commit.breaks.is_empty() {
         return Ok(Major);
