@@ -62,6 +62,5 @@ jobs:
           RUST_BACKTRACE: 1
           GH_USERNAME: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          CARGO_TOKEN: ${{ secrets.CARGO_TOKEN }}
           GIT_COMMITTER_NAME: semantic-rs
           GIT_COMMITTER_EMAIL: semantic-rs@users.noreply.github.com
